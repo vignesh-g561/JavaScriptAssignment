@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+    <meta charset="utf-8">
+    <title>Aggregate the GDP of the G20 countries by continent </title>
+    <style>
+    .axis .label {
+      font-size: 15pt;
+    }
+    </style>
+  </head>
+  <body>
+    <script>
+        var outerWidth = 1000;
+        var outerHeight = 500;
+        var margin = { left: 150, top: 20, right: 20, bottom: 100 };
+        var barPadding = 0.05;
+
+        var xColumn = "Continent Name";
+        var yColumn = "GDP";
+        var xAxisLabelOffset = 70;
+        var yAxisLabelOffset = 80;
+
+        var innerWidth  = outerWidth  - margin.left - margin.right;
+        var innerHeight = outerHeight - margin.top  - margin.bottom;
+
+        var svg = d3.select("body").append("svg")
+          .attr("width",  outerWidth)
+          .attr("height", outerHeight);
+        var g = svg.append("g")
+          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        var xAxisG = g.append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + innerHeight + ")");
+
+        var xAxisLabel = xAxisG.append("text")
+          .style("text-anchor", "middle")
+          .attr("transform", "translate(" + (innerWidth / 2) + "," + xAxisLabelOffset + ")")
+          .attr("class", "label")
+          .text(xColumn);
+
+        var yAxisG = g.append("g")
+          .attr("class", "y axis");
+
+        var yAxisLabel = yAxisG.append("text")
+            .style("text-anchor", "middle")
+            .attr("transform", "translate(-" + yAxisLabelOffset + "," + (innerHeight / 2) + ") rotate(-90)")
+            .attr("class", "label")
+            .text(yColumn);
+
+        var xScale = d3.scale.ordinal().rangeBands([0, innerWidth],barPadding);
+        var yScale = d3.scale.linear().range([innerHeight, 0]);
+
+        var xAxis = d3.svg.axis().scale(xScale).orient("bottom");
+
+        var yAxis = d3.svg.axis().scale(yScale).orient("left");
+        var arr_objs=[]; // continent objects
+        var conts=['North America','South America','Europe','Africa','Asia','Oceania','Antarctica'];
+        var c=[0,0,0,0,0,0,0]; //count array
+        var arr_pop = [0,0,0,0,0,0,0]; //population array
+        //reading json file using D3
+        d3.json("GDP_json_2013.json", function(data) {
+        // dividing 20 countries into 7 continents
+          for(var i=0;i<data.length;i++){
+            var objs ={};
+            var pop = parseFloat(data[i]['GDP Billions (US$) - 2010']) + parseFloat(data[i]['GDP Billions (US$) - 2011']) + parseFloat(data[i]['GDP Billions (US$) - 2012']) + parseFloat(data[i]['GDP Billions (US$) - 2013']);
+            if(data[i]['Country Name'] == 'Canada' || data[i]['Country Name'] == 'Mexico' || data[i]['Country Name'] == 'USA'){
+              c[0]+=1;
+              arr_pop[0]+=pop;
+              if(c[0] == 3){
+                objs['Continent Name'] = conts[0];
+                objs['GDP'] = arr_pop[0];
+                arr_objs.push(objs);
+              }
+            }
+            else if(data[i]['Country Name'] == 'Argentina'){
+                objs['Continent Name'] = conts[1];
+                objs['GDP'] = pop;
+                arr_objs.push(objs);
+            }
+            else if(data[i]['Country Name'] == 'France' || data[i]['Country Name'] == 'Germany' || data[i]['Country Name'] == 'Italy' || data[i]['Country Name'] == 'Russia' || data[i]['Country Name'] == 'United Kingdom'){
+              c[2]+=1;
+              arr_pop[2]+=pop;
+              if(c[2] == 5){
+                objs['Continent Name'] = conts[2];
+                objs['GDP'] = arr_pop[2];
+                arr_objs.push(objs);
+              }
+            }
+            else if(data[i]['Country Name'] == 'South Africa'){
+              objs['Continent Name'] = conts[3];
+              objs['GDP'] = pop;
+              arr_objs.push(objs);
+            }
+            else if(data[i]['Country Name'] == 'Brazil'){
+              objs['Continent Name'] = conts[6];
+              objs['GDP'] = pop;
+              arr_objs.push(objs);
+            }
+            else if(data[i]['Country Name'] == 'Australia'){
+              objs['Continent Name'] = conts[5];
+              objs['GDP'] = pop;
+              arr_objs.push(objs);
+            }
+            else{
+              c[4]+=1;
+              arr_pop[4]+=pop;
+              if(c[4] == 7){
+                objs['Continent Name'] = conts[4];
+                objs['GDP'] = arr_pop[4];
+                arr_objs.push(objs);
+              }
+            }
+          }
+        xScale.domain(       arr_objs.map( function (d){ return d[xColumn]; }));
+        yScale.domain([0, d3.max(arr_objs, function (d){ return parseInt(d[yColumn]); })]);
+        xAxisG.call(xAxis);
+        yAxisG.call(yAxis);
+        var bars = g.selectAll("rect").data(arr_objs);
+        bars.enter().append("rect")
+          .attr("width", xScale.rangeBand())
+          .attr("fill","red");
+        bars
+          .attr("x",      function (d){return  xScale(d[xColumn]);})
+          .attr("y",      function (d){return  yScale(d[yColumn]);})
+          .attr("height", function (d){return  innerHeight - yScale(d[yColumn]);});
+        bars.exit().remove();
+    });
+    </script>
+  </body>
+</html>
